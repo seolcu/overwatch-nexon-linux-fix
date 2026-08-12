@@ -1,0 +1,25 @@
+Third-party material
+====================
+
+`overwatch-nexon-linux-fix.sh` embeds one certificate:
+
+    Subject : CN = DigiCert Trusted Root G4
+              O  = DigiCert Inc, OU = www.digicert.com, C = US
+    Issuer  : CN = DigiCert Assured ID Root CA
+    SHA-1   : A99D5B79E9F1CDA59CDAB6373169D5353F5874C6
+    Valid   : 2022-08-01 .. 2031-11-09
+
+This is a public certificate authority certificate issued and distributed by
+DigiCert, Inc. It is the cross-signed form of "DigiCert Trusted Root G4", and
+is included so that certificate chain building under Wine reaches the same
+root certificate it reaches on Windows.
+
+The certificate is not covered by the MIT license in LICENSE, and no ownership
+of it is claimed. It is reproduced verbatim as published by DigiCert. The same
+certificate ships inside the Authenticode signature of several widely
+distributed binaries and in the certificate stores of current Windows
+installations.
+
+DigiCert is a trademark of DigiCert, Inc. This project is not affiliated with
+or endorsed by DigiCert, Inc., Blizzard Entertainment, Inc., NEXON Korea
+Corporation, or Valve Corporation.

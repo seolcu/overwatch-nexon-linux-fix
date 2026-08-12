@@ -21,7 +21,9 @@
 #   Ubuntu  : sudo apt install bubblewrap openssl python3
 #   Arch    : sudo pacman -S bubblewrap openssl python
 #
-# 라이선스: public domain / CC0. 마음대로 퍼가세요.
+# 라이선스: MIT (LICENSE 참조). 내장된 DigiCert 교차서명 인증서는 적용 대상이
+#           아닙니다 — NOTICE 참조.
+# Copyright (c) 2026 seolcu
 
 set -euo pipefail
 

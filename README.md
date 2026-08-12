@@ -109,7 +109,10 @@ Then set Steam launch options for the Battle.net shortcut:
 
 ## 라이선스 / License
 
-Public domain ([CC0 1.0](LICENSE)). 자유롭게 퍼가고 수정하세요.
+[MIT](LICENSE). 자유롭게 퍼가고 수정하세요. 저작권 표시만 남겨 주세요.
+
+스크립트에 내장된 DigiCert 교차서명 인증서는 DigiCert가 배포하는 공개 CA
+인증서이며 MIT 적용 대상이 아닙니다. 자세한 내용은 [NOTICE](NOTICE) 참조.
 
 <sub>
 키워드: 오버워치 리눅스, 오버워치 넥슨 리눅스, 오버워치 0xE01300B0, 0xC06D007E,
