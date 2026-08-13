@@ -9,10 +9,33 @@ This repository contains a working fix and a full root-cause analysis.
 ## Symptoms
 
 - Launching Overwatch from Battle.net → a black window appears briefly, then closes
-- Blizzard error dialog **`0xE01300B0`** (internally exception `0xC06D007E`)
+- Two error dialogs follow, in this order (the underlying exception is `0xC06D007E`)
 - Reinstalling, Scan and Repair, switching Proton builds, clearing shader caches —
   **all have no effect**
 - The game worked in the same setup right up until the Nexon transfer
+
+**Dialog 1** — titled `Overwatch`
+
+```
+Overwatch has encountered a critical error during startup.
+Please reinstall the game and try again.
+```
+
+**Dialog 2** — titled `Overwatch`, quoted from the Korean client:
+
+```
+설치한 파일에 문제가 있습니다. 문제가 지속되면 게임을 다시 설치해 주십시오.
+(0xE01300B0)
+
+블리자드와 이 문제에 대해 논의할 때 아래의 신고 ID를 사용하십시오.
+```
+
+Translated: *"There is a problem with the installed files. Please reinstall the game
+if the problem persists. (0xE01300B0) — Use the report ID below when discussing this
+issue with Blizzard."* The exact English-client wording may differ; the code is what
+matters.
+
+If the code in parentheses is not `0xE01300B0`, the cause may be a different one.
 
 If your symptoms differ (you can log in but matchmaking fails, graphics glitches,
 etc.), this is not your problem.
@@ -266,3 +289,13 @@ Once that is fixed upstream, this script becomes unnecessary.
 The DigiCert cross-signed certificate embedded in the script is a public CA
 certificate distributed by DigiCert and is not covered by the MIT license.
 See [NOTICE](NOTICE).
+
+<sub>
+Keywords: Overwatch Linux fix, Overwatch Nexon Korea Proton, Overwatch 0xE01300B0,
+0xC06D007E, Overwatch won't launch Proton, Battle.net Proton, Steam Deck Overwatch,
+gamescale64.dll, Wine certificate chain, DigiCert Trusted Root G4.
+Error text: "Overwatch has encountered a critical error during startup. Please
+reinstall the game and try again.",
+"설치한 파일에 문제가 있습니다. 문제가 지속되면 게임을 다시 설치해 주십시오.",
+"블리자드와 이 문제에 대해 논의할 때 아래의 신고 ID를 사용하십시오."
+</sub>

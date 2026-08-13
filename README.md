@@ -8,9 +8,27 @@
 ## 증상
 
 - 배틀넷에서 오버워치 실행 → 검은 창이 잠깐 뜨다가 사라짐
-- 블리자드 오류창 **`0xE01300B0`** (내부 예외 `0xC06D007E`)
+- 아래 두 개의 오류창이 순서대로 뜸 (내부 예외는 `0xC06D007E`)
 - 재설치, 검사 및 복구, Proton 버전 변경, 셰이더 캐시 삭제 — 전부 무효
 - 넥슨 이관 직전까지는 같은 환경에서 정상 플레이됐음
+
+**오류창 1** — 제목 `오버워치`
+
+```
+Overwatch has encountered a critical error during startup.
+Please reinstall the game and try again.
+```
+
+**오류창 2** — 제목 `오버워치`
+
+```
+설치한 파일에 문제가 있습니다. 문제가 지속되면 게임을 다시 설치해 주십시오.
+(0xE01300B0)
+
+블리자드와 이 문제에 대해 논의할 때 아래의 신고 ID를 사용하십시오.
+```
+
+괄호 안의 코드가 `0xE01300B0` 이 아니면 원인이 다를 수 있습니다.
 
 증상이 다르면(로그인은 되는데 매치가 안 잡힌다든가, 그래픽이 깨진다든가)
 이 문제가 아닙니다.
@@ -255,4 +273,7 @@ Lutris·Heroic·Bottles·순정 wine 설정은 **직접 검증하지 못했습�
 오버워치 프로톤 실행 안됨, 배틀넷 리눅스, gamescale64.dll, 스팀덱 오버워치,
 Overwatch Linux fix, Overwatch Nexon Korea Proton, Overwatch 0xE01300B0,
 Battle.net Proton, Steam Deck Overwatch, Wine certificate chain, DigiCert Trusted Root G4.
+오류 메시지: "설치한 파일에 문제가 있습니다. 문제가 지속되면 게임을 다시 설치해 주십시오.",
+"블리자드와 이 문제에 대해 논의할 때 아래의 신고 ID를 사용하십시오.",
+"Overwatch has encountered a critical error during startup. Please reinstall the game and try again."
 </sub>
