@@ -115,6 +115,11 @@ OW_PREFIX=/경로/to/prefix ./overwatch-nexon-linux-fix.sh install
 `run` 까지만 넣습니다. Lutris가 뒤에 실제 명령을 붙여 줍니다.
 (System options가 안 보이면 우측 하단 **Advanced** 토글을 켜세요.)
 
+umu-launcher(`umu-run`)를 쓰는 구성에서도 그대로 동작합니다 — 래퍼가 바깥이고
+umu/pressure-vessel 컨테이너가 그 안에 생기면 됩니다. 다만 **실행을 누르기 전에 배틀넷이
+떠 있으면 안 됩니다.** 기존 인스턴스로 실행이 넘어가면 게임이 래퍼 밖에서 뜨는데,
+Lutris 로그에는 래퍼가 정상적으로 보입니다.
+
 ### Heroic Games Launcher
 
 게임 **Settings** → **Advanced** → **Wrapper command / 래퍼 명령**에 추가:
@@ -194,6 +199,29 @@ sudo update-ca-certificates
 
 셋 다 ✓ 이고 런처에 래퍼를 넣었다면 게임을 실행하세요.
 
+문제가 생기면 `status` 대신 **`doctor`** 를 쓰세요. 파일이 있는지만 보는 게 아니라
+신뢰 목록·래퍼 네임스페이스·프리픽스 레지스트리를 실제로 검증합니다.
+
+```bash
+./overwatch-nexon-linux-fix.sh doctor
+```
+
+```
+1. 호스트 신뢰 목록 / host trust list
+  ✓ 자체서명 G4 제외됨
+  ✓ 핀 대상 루트 DigiCert Assured ID Root CA 있음
+  ✓ 교차인증서 → 핀 루트 검증 성공
+2. 래퍼 네임스페이스 / inside the wrapper
+  ✓ 네임스페이스 안 신뢰 목록에서 자체서명 G4 제외됨
+3. Wine 프리픽스 / Wine prefix
+  ✓ 교차서명 인증서가 CA 저장소에 정상 등록됨
+  ✓ 프리픽스 Root 에 자체서명 G4 없음
+4. 실행 중인 세션 / running sessions
+  ✓ 래퍼 밖에서 실행 중인 프로세스 없음
+```
+
+마지막 **5. 환경** 항목은 이슈를 남길 때 그대로 붙여 주시면 됩니다.
+
 ## 문제 해결
 
 **`install` 이 "wineserver 가 실행 중" 이라며 멈춥니다**
@@ -205,12 +233,38 @@ sudo update-ca-certificates
 교체가 필요 없으니, 1단계만 하고 래퍼 없이 실행해 보세요.
 
 **래퍼를 넣었는데 여전히 `0xE01300B0`**
-- `status` 가 셋 다 ✓ 인지 확인하세요.
+
+먼저 `./overwatch-nexon-linux-fix.sh doctor` 를 돌리세요. ✗ 가 나온 항목이 원인입니다.
+전부 ✓ 인데도 실패한다면 아래를 순서대로 확인하세요.
+
+- **배틀넷이 이미 떠 있지 않은지.** 래퍼 밖에서 시작된 세션에는 픽스가 적용되지 않습니다.
+  런처가 "실행"을 기존 배틀넷 인스턴스에 넘기면 게임도 그쪽에서 뜨는데, 런처 로그에는
+  래퍼가 정상적으로 보여서 알아채기 어렵습니다. 전부 종료하고 다시 시도하세요.
+  ```bash
+  pkill -f Battle.net; pkill -x wineserver
+  ```
 - Steam이라면 실행 옵션에 `%command%` 가 들어갔는지 확인하세요.
 - Flatpak Steam/Bottles/Heroic이라면 샌드박스 안에서 `bwrap` 중첩이 막혔을 수
-  있습니다. 네이티브 패키지를 쓰거나 위 **대안** 을 시도하세요.
+  있습니다. `doctor` 의 **2. 래퍼 네임스페이스** 가 ✗ 로 나옵니다. 네이티브 패키지를
+  쓰거나 위 **대안** 을 시도하세요.
 - 시스템 CA 번들이 갱신되면 신뢰 목록이 자동 재생성되지만, 강제로 다시 만들려면
   `rm -rf ~/.local/share/overwatch-nexon-fix/certs` 후 `install` 을 실행하세요.
+- 그래도 안 되면 **애초에 원인이 다를 수 있습니다.** `0xE01300B0` 은 블리자드가 "설치
+  파일에 문제가 있다"는 뜻으로 두루 쓰는 코드이고, 이 스크립트가 다루는 것은 그중
+  인증서 체인 경로 하나입니다. 내부 예외가 `0xC06D007E` 가 맞는지 확인해 주세요.
+  ```bash
+  # Steam 실행 옵션 앞에 붙여 실행한 뒤
+  PROTON_LOG="+timestamp,+pid,+tid,+seh,+chain,+crypt,+wintrust" %command%
+  grep -n 'c06d007e' ~/steam-*.log
+  ```
+  `c06d007e` 가 안 나오면 이 문제가 아닙니다. `doctor` 출력과 함께 이슈로 알려 주세요.
+
+**`system.reg` 를 직접 grep 했더니 자체서명 G4 지문이 아직 나옵니다**
+정상입니다. `Software\Wine\HostImportedCertificates` 와 그 32비트 뷰
+(`Wow6432Node`)에 남는 두 건은 Wine 내부 장부일 뿐 신뢰 저장소가 아닙니다.
+실제 신뢰 저장소인 `SystemCertificates\Root\Certificates\...` 항목만 없으면 됩니다
+(그건 `doctor` 가 확인해 줍니다). 자세한 내용은
+[`docs/ANALYSIS.md`](docs/ANALYSIS.md) 의 §6 을 보세요.
 
 **증상이 다릅니다 (로그인 실패, 매치 안 잡힘 등)**
 이 문제가 아닙니다. 이 스크립트는 게임이 아예 뜨지 않는 `0xE01300B0` 만 다룹니다.

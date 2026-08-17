@@ -178,6 +178,59 @@ seh:dispatch_exception code=c06d007e
 체인의 `dwErrorStatus` 도 `0x00000000` 입니다. 인증서 유효기간도 정상입니다
 (리프 2025-02-18 ~ 2028-02-13, 중간 ~2036-04-28). **다른 것은 체인의 종착점 하나뿐입니다.**
 
+### Wine이 호스트 인증서를 읽는 경로
+
+`dlls/crypt32/unixlib.c` 의 목록을 앞에서부터 훑되, **인증서가 하나라도 나온 첫 위치에서
+멈춥니다**(`list_empty` 단락 평가).
+
+```c
+static const char * const CRYPT_knownLocations[] = {
+ "/etc/ssl/certs/ca-certificates.crt",   /* ← 주류 배포판은 여기서 끝 */
+ "/etc/ssl/certs",
+ "/etc/pki/tls/certs/ca-bundle.crt",
+ "/usr/share/ca-certificates/ca-bundle.crt",
+ "/usr/local/share/certs/", "/etc/sfw/openssl/certs", "/etc/security/cacerts",
+};
+for (i = 0; i < ARRAY_SIZE(CRYPT_knownLocations) && list_empty(&root_cert_list); i++)
+    import_certs_from_path( CRYPT_knownLocations[i], TRUE );
+```
+
+그래서 `/etc/ssl/certs` 하나만 바꿔치기해도 1·2번이 함께 덮여 충분합니다. Fedora·Arch·
+Debian 모두 `/etc/ssl/certs` 는 실제 디렉토리이고 그 안의 `ca-certificates.crt` 가 번들을
+가리킵니다. 이 디렉토리가 없는 구성을 대비해 스크립트는 뒤쪽 경로도 (심볼릭 링크가 아닌
+실제 파일일 때만) 함께 덮습니다.
+
+### `HostImportedCertificates` 는 신뢰 저장소가 아니다
+
+프리픽스의 `system.reg` 를 지문으로 grep 하면 보통 **세 곳**이 잡힙니다.
+
+| 위치 | 성격 |
+|---|---|
+| `Software\Microsoft\SystemCertificates\Root\Certificates\<지문>` | 실제 신뢰 저장소 |
+| `Software\Wine\HostImportedCertificates` → `"<지문>"=dword:1` | Wine 내부 장부 |
+| `Software\Wow6432Node\Wine\HostImportedCertificates` → 같은 값 | 위의 32비트 뷰 |
+
+뒤의 둘은 `rootstore.c` 의 `mark_cert_imported()` 가 남기는 **"이건 내가 호스트에서 가져온
+것"이라는 표시**일 뿐입니다. 체인 빌더는 이 키를 읽지 않습니다. 용도는 하나 — 호스트
+번들에서 사라진 인증서를 `Root` 에서 지울 때, 원래 사용자가 직접 넣은 것인지 Wine이
+가져온 것인지 구분하는 것입니다.
+
+```c
+if (CertGetCertificateContextProperty( cert, CERT_FIRST_USER_PROP_ID, NULL, &size )) ...
+TRACE( "key %s is not imported, not deleting.\n", debugstr_w(hash_str) );
+RegDeleteValueW( import_key, hash_str );
+```
+
+여기에 함정이 있습니다. **장부에 표시가 없는 인증서는 호스트에서 사라져도 Wine이 지우지
+않습니다.** 프리픽스를 만든 Wine 버전이 이 기능보다 오래됐거나 `wine reg import` 로 직접
+넣은 경우가 그렇습니다. 그러면 신뢰 목록을 아무리 바꿔치기해도 자체서명 G4가 프리픽스
+`Root` 에 눌러앉아 체인이 계속 3단계에서 끝납니다.
+
+그래서 스크립트는 Wine의 정리에 기대지 않고 `install` 때 `Root\Certificates` 의 자체서명
+G4 항목을 **직접 삭제**합니다. `HostImportedCertificates` 의 dword 값은 무해한 장부라
+건드리지 않으므로, 픽스가 정상 적용된 프리픽스에서도 grep 결과는 3건이 아닌 **2건**으로
+남습니다. 이 2건은 정상입니다.
+
 ## 7. 재현 케이스
 
 게임의 검사 ①~④를 그대로 재현하는 프로그램을 mingw로 작성해 확인했습니다.
@@ -218,8 +271,16 @@ RESULT: pinned root MATCHED -> game would call LoadLibraryW()
 1. 공개 교차서명 인증서를 프리픽스의 **중간 CA 저장소**에 설치
 2. 게임에 보여주는 신뢰 목록에서 **자체서명 G4만 제외**
 
+3. 프리픽스 `Root` 저장소에 남아 있는 **자체서명 G4 항목을 직접 삭제**
+   (위 "`HostImportedCertificates` 는 신뢰 저장소가 아니다" 참조)
+
 이러면 신뢰 앵커로 가는 길이 교차인증서 하나뿐이라, Wine이 한 칸 더 올라가
 `DigiCert Assured ID Root CA` 에 도달합니다.
+
+전제 조건이 하나 더 있습니다. **`DigiCert Assured ID Root CA` 자체가 신뢰 목록에 있어야
+합니다.** 배포판이 이 루트를 뺐다면 올라갈 앵커가 없어 체인은 여전히 실패합니다.
+스크립트는 이 루트를 신뢰 목록에서 확인하고, 없으면 내장 사본을 (래퍼 네임스페이스
+안에서만) 되돌려 넣습니다.
 
 교차서명 인증서는 게임 폴더의 `bink2w64.dll` 서명에 마침 포함돼 있어 거기서
 추출했습니다. 공개 DigiCert 인증서이므로 재배포에 문제가 없습니다.
@@ -231,7 +292,7 @@ RESULT: pinned root MATCHED -> game would call LoadLibraryW()
 | 교차인증서를 `CA` 저장소에만 추가 | 무효. 자체서명 G4가 여전히 먼저 잡힘 |
 | 교차인증서를 `Root` 저장소에 추가 | 무효. Subject Key ID가 같아 구분 안 됨 |
 | 자체서명 G4를 `Disallowed` 저장소에 등록 | Wine이 체인 구성에 반영하지 않음 |
-| 프리픽스 Root에서 자체서명 G4 삭제 | 실행할 때마다 호스트 번들에서 자동 재임포트 |
+| 프리픽스 Root에서 자체서명 G4 삭제 (래퍼 없이) | 실행할 때마다 호스트 번들에서 자동 재임포트 |
 | `CertCreateCertificateChainEngine(hExclusiveRoot)` | Wine 미구현, `E_INVALIDARG` |
 | 동 `hRestrictedRoot` | 역시 `E_INVALIDARG` |
 | 호스트 CA 번들만 수정 | **무효.** 컨테이너는 런타임 이미지 인증서를 사용 |

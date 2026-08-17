@@ -124,6 +124,11 @@ Right-click the game → **Configure** → **System options** → **Command pref
 Stop after `run` — Lutris appends the actual command itself. (If you don't see
 System options, enable the **Advanced** toggle at the bottom right.)
 
+This works with umu-launcher (`umu-run`) too — the wrapper goes on the outside and the
+umu/pressure-vessel container is created inside it. Just make sure **Battle.net is not
+already running** when you hit play: if launching is handed to an existing instance,
+the game comes up outside the wrapper while Lutris's log still looks correct.
+
 ### Heroic Games Launcher
 
 Game **Settings** → **Advanced** → **Wrapper command**:
@@ -202,6 +207,30 @@ To undo: delete the file from the blacklist directory (Fedora) or remove the `!`
 
 Three checkmarks plus the wrapper in your launcher means you're ready to play.
 
+If something goes wrong, use **`doctor`** instead of `status`. It doesn't just check
+that files exist — it verifies the trust list, the wrapper's mount namespace and the
+prefix registry for real.
+
+```bash
+./overwatch-nexon-linux-fix.sh doctor
+```
+
+```
+1. 호스트 신뢰 목록 / host trust list
+  ✓ self-signed G4 excluded
+  ✓ pinned root present
+  ✓ cross-certificate verifies up to the pinned root
+2. 래퍼 네임스페이스 / inside the wrapper
+  ✓ self-signed G4 hidden inside
+3. Wine 프리픽스 / Wine prefix
+  ✓ cross-certificate stored and valid
+  ✓ self-signed G4 absent from the prefix Root store
+4. 실행 중인 세션 / running sessions
+  ✓ nothing running outside the wrapper
+```
+
+Section **5. environment** is meant to be pasted straight into a bug report.
+
 ## Troubleshooting
 
 **`install` stops with "wineserver is running"**
@@ -213,12 +242,40 @@ Your distribution already excludes that certificate. In that case no trust list 
 is needed — do step 1 only and try launching without the wrapper.
 
 **Wrapper is set but `0xE01300B0` persists**
-- Check that `status` shows all three checkmarks.
+
+Run `./overwatch-nexon-linux-fix.sh doctor` first — whatever comes back ✗ is your
+cause. If everything is ✓ and it still fails, work through these in order.
+
+- **Make sure Battle.net isn't already running.** A session started outside the
+  wrapper never gets the fix. If your launcher hands "play" to an existing Battle.net
+  instance, the game comes up over there — while the launcher's own log still shows
+  the wrapper as the parent process, so this is easy to miss. Close everything first:
+  ```bash
+  pkill -f Battle.net; pkill -x wineserver
+  ```
 - On Steam, make sure `%command%` is in the launch options.
-- On Flatpak Steam/Bottles/Heroic, nested `bwrap` may be blocked by the sandbox. Use
-  the native package, or the **alternative** above.
+- On Flatpak Steam/Bottles/Heroic, nested `bwrap` may be blocked by the sandbox —
+  `doctor` reports **2. 래퍼 네임스페이스** as ✗. Use the native package, or the
+  **alternative** above.
 - The trust list rebuilds automatically when the system CA bundle changes; to force
   it, `rm -rf ~/.local/share/overwatch-nexon-fix/certs` and run `install` again.
+- If none of that helps, **the cause may simply be a different one.** `0xE01300B0` is
+  a catch-all Blizzard code for "something is wrong with your installation"; this
+  script addresses one specific path to it. Confirm the inner exception really is
+  `0xC06D007E`:
+  ```bash
+  # prepend to the Steam launch options, then
+  PROTON_LOG="+timestamp,+pid,+tid,+seh,+chain,+crypt,+wintrust" %command%
+  grep -n 'c06d007e' ~/steam-*.log
+  ```
+  No `c06d007e` means this isn't the bug you have. Please open an issue with the
+  `doctor` output.
+
+**Grepping `system.reg` still finds the self-signed G4 thumbprint**
+That's expected. The two hits under `Software\Wine\HostImportedCertificates` and its
+32-bit view (`Wow6432Node`) are Wine's own bookkeeping, not a trust store. Only the
+`SystemCertificates\Root\Certificates\...` entry matters, and `doctor` checks that one
+for you. See §6 of [`docs/ANALYSIS.md`](docs/ANALYSIS.md) (Korean).
 
 **Different symptoms (login fails, no matchmaking, …)**
 Not this bug. This script only addresses `0xE01300B0`, where the game never starts.
