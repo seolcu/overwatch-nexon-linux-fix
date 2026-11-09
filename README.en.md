@@ -339,6 +339,11 @@ This is a workaround. The real fix belongs in Wine's `crypt32`:
 
 Once that is fixed upstream, this script becomes unnecessary.
 
+## More
+
+A summary with the verified environment, plus other Linux and self-hosting fixes, is at [blog.seolcu.com](https://blog.seolcu.com/projects/overwatch-nexon-linux-fix/).
+If this helped you, a ⭐ star or [GitHub Sponsors](https://github.com/sponsors/seolcu) support is appreciated.
+
 ## License
 
 [MIT](LICENSE).

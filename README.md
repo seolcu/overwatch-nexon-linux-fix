@@ -314,6 +314,11 @@ Lutris·Heroic·Bottles·순정 wine 설정은 **직접 검증하지 못했습�
 동일하므로 동작할 것으로 보지만, 각 런처의 설정 항목 이름은 버전에 따라 다를 수
 있습니다. 되거나 안 되면 이슈로 알려 주시면 문서에 반영하겠습니다.
 
+## 더 보기
+
+검증 환경을 포함한 요약과 다른 리눅스·셀프호스팅 문제 해결 노트는 [blog.seolcu.com](https://blog.seolcu.com/projects/overwatch-nexon-linux-fix/)에 정리되어 있습니다.
+도움이 되었다면 ⭐ Star나 [GitHub Sponsors](https://github.com/sponsors/seolcu)로 응원해 주세요.
+
 ## 라이선스 / License
 
 [MIT](LICENSE). 자유롭게 퍼가고 수정하세요. 저작권 표시만 남겨 주세요.
