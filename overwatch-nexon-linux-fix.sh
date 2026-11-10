@@ -613,8 +613,11 @@ build_binds() {
 live_sessions() {
     local found=""
     if pgrep -x wineserver    >/dev/null 2>&1; then found="$found wineserver"; fi
-    if pgrep -f 'Battle\.net' >/dev/null 2>&1; then found="$found Battle.net"; fi
-    if pgrep -f 'Agent\.exe'  >/dev/null 2>&1; then found="$found Agent.exe"; fi
+    # Wine 프로세스의 명령줄은 윈도우 경로(Z:\…, C:/…)로 시작한다. 경로만으로 찾으면
+    # 이 스크립트 자신과 Steam/Proton 래퍼의 인자("…/Battle.net Launcher.exe")까지 걸려
+    # 항상 "이미 실행 중"이 되고, run 의 매 실행 Root 정리도 늘 건너뛰게 된다.
+    if pgrep -f '^[A-Za-z]:[\\/].*Battle\.net' >/dev/null 2>&1; then found="$found Battle.net"; fi
+    if pgrep -f '^[A-Za-z]:[\\/].*Agent\.exe'  >/dev/null 2>&1; then found="$found Agent.exe"; fi
     printf '%s' "${found# }"
 }
 
